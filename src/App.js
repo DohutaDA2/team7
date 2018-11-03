@@ -1,26 +1,21 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { Component } from "react";
+import { Route, Switch } from "react-router-dom";
+import Welcome from "./components/Welcome/Welcome";
+import Login from "./container/LoginContainer/Login";
+import MoneyContainer from "./container/MoneyContainer/MoneyContainer";
+import FormContainer from "./container/MoneyContainer/FormContainter/PassbookForm";
+import DetailContainer from './container/MoneyContainer/DetailContainer/PassbookDetail';
 
 class App extends Component {
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
-      </div>
+      <Switch>
+        <Route path="/" exact component={Welcome} />
+        <Route path="/login" exact component={Login} />
+        <Route path="/home" exact component={MoneyContainer} />
+        <Route path="/form" exact component={FormContainer} />
+        <Route path="/detail" exact component={DetailContainer} />
+      </Switch>
     );
   }
 }
