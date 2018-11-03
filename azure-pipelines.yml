@@ -30,10 +30,7 @@ steps:
   - task: ArchiveFiles@2
     displayName: "Archive"
     inputs:
-      rootFolderOrFile: '$(System.DefaultWorkingDirectory)/build'
+      rootFolderOrFile: "$(System.DefaultWorkingDirectory)/build"
       includeRootFolder: false
 
   - task: PublishBuildArtifacts@1
-    displayName: "Publish Artifact"
-    inputs:
-      PathtoPublish: build
