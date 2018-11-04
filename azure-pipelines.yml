@@ -10,7 +10,7 @@ steps:
 
   - script: npm run test
 
-  - script: npx jest --ci --reporters=jest-junit --reporters=default --coverage --coverageReporters=cobertura --coverageReporters=html
+  - script: npx jest --ci --updateSnapshot --reporters=jest-junit --reporters=default --coverage --coverageReporters=cobertura --coverageReporters=html
 
   - task: PublishTestResults@2
     displayName: "Publish Test Results"
