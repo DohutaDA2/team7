@@ -8,8 +8,6 @@ steps:
 
   - script: npm install
 
-  - script: npm run test
-
   - script: npx jest --ci --updateSnapshot --reporters=jest-junit --reporters=default --coverage --coverageReporters=cobertura --coverageReporters=html
 
   - task: PublishTestResults@2
