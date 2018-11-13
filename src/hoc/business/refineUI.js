@@ -1,4 +1,4 @@
-const moment = require("../../../../../../../AppData/Local/Microsoft/TypeScript/3.1/node_modules/moment/moment");
+import moment from "moment";
 
 const formatNum = num => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -13,9 +13,17 @@ const toShortDate = date => {
 const today = new moment();
 
 const getEndDate = (opendate, term) => {
-  if(moment(opendate, "DD/MM/YYYY").add(term, "months") > today)
-    return moment(opendate, "DD/MM/YYYY").add(term, "months").format("DD/MM/YYYY");
+  if (moment(opendate, "DD/MM/YYYY").add(term, "months") > today)
+    return moment(opendate, "DD/MM/YYYY")
+      .add(term, "months")
+      .format("DD/MM/YYYY");
   else
-    return getEndDate(moment(opendate, "DD/MM/YYYY").add(term, "months").format("DD/MM/YYYY"), term);
-}
+    return getEndDate(
+      moment(opendate, "DD/MM/YYYY")
+        .add(term, "months")
+        .format("DD/MM/YYYY"),
+      term
+    );
+};
+
 export { formatNum, toShortDate, getEndDate };
