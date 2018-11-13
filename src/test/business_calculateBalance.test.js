@@ -151,22 +151,22 @@ describe("Tinh lai suat", () => {
     ).toEqual({ balance: 10000000, profit: 25138 });
   });
 
-  // test("STK 123.000.000 không kỳ hạn, lãi suất 0.06%, 0.4%, không log, mở ngày 23/10/2018", () => {
-  //   expect(
-  //     business.caclculateProfitUnlimit(
-  //       null,
-  //       123000000,
-  //       0.06,
-  //       0.4,
-  //       "23/10/2018",
-  //       0,
-  //       false,
-  //       "",
-  //       "p0",
-  //       "e2"
-  //     )
-  //   ).toEqual({ balance: 123000000, profit: 28700, });
-  // });
+  test("STK 123.000.000 không kỳ hạn, lãi suất 0.06%, 0.4%, không log, mở ngày 23/10/2018", () => {
+    expect(
+      business.caclculateProfitUnlimit(
+        null,
+        123000000,
+        0.06,
+        0.4,
+        "23/10/2018",
+        0,
+        false,
+        "",
+        "p0",
+        "e2"
+      )
+    ).toEqual({ balance: 123000000, profit: 28700, });
+  });
 
   let log2 = [
     { amount: 50000, time: "20/9/2018" },
