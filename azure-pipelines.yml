@@ -8,9 +8,7 @@ steps:
 
   - script: npm install
 
-  - script: npm run test
-
-  - script: npx jest --reporters=jest-junit --reporters=default --coverage --coverageReporters=cobertura --coverageReporters=html
+  - script: npx jest --ci --updateSnapshot --reporters=jest-junit --reporters=default --coverage --coverageReporters=cobertura --coverageReporters=html
 
   - task: PublishTestResults@2
     displayName: "Publish Test Results"
@@ -30,7 +28,7 @@ steps:
   - task: ArchiveFiles@2
     displayName: "Archive"
     inputs:
-      rootFolderOrFile: "$(System.DefaultWorkingDirectory)/build"
+      rootFolderOrFile: '$(System.DefaultWorkingDirectory)/build'
       includeRootFolder: false
 
   - task: PublishBuildArtifacts@1
