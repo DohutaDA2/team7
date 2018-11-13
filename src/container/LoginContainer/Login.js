@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import classes from "./Login.css";
 import { checkValidityLogin } from "../../hoc/business/checkValidity";
-import { callServer } from "../../hoc/business/loginHandler";
+import { getAuth } from "../../hoc/business/loginHandler";
 
 class Login extends Component {
   state = {
@@ -74,49 +74,96 @@ class Login extends Component {
   /**
    * Signup process handler
    */
-  signUpHandler = event => {
-    event.preventDefault();
-    let errorMessage = [];
-    if (
-      this.state.controls.email.value === "" &&
-      this.state.controls.password.value === ""
-    )
-      errorMessage.push("EMAIL và PASSWORD không được rỗng");
-    else {
-      if (this.state.controls.email.value === "")
-        errorMessage.push("EMAIL không được rỗng");
-      if (this.state.controls.password.value === "")
-        errorMessage.push("PASSWORD không được rỗng");
-    }
-    for (let key in this.state.controls) {
-      if (this.state.controls[key].status.errorMessage !== "") {
-        errorMessage = errorMessage.concat(
-          this.state.controls[key].status.errorMessage
-        );
-      }
-    }
-    this.setState({ errorMessage: errorMessage });
+  // signUpHandler = event => {
+  //   event.preventDefault();
+  //   let errorMessage = [];
+  //   if (
+  //     this.state.controls.email.value === "" &&
+  //     this.state.controls.password.value === ""
+  //   )
+  //     errorMessage.push("EMAIL và PASSWORD không được rỗng");
+  //   else {
+  //     if (this.state.controls.email.value === "")
+  //       errorMessage.push("EMAIL không được rỗng");
+  //     if (this.state.controls.password.value === "")
+  //       errorMessage.push("PASSWORD không được rỗng");
+  //   }
+  //   for (let key in this.state.controls) {
+  //     if (this.state.controls[key].status.errorMessage !== "") {
+  //       errorMessage = errorMessage.concat(
+  //         this.state.controls[key].status.errorMessage
+  //       );
+  //     }
+  //   }
+  //   this.setState({ errorMessage: errorMessage });
 
-    if (errorMessage.length === 0) {
-      this.setState({ loading: true });
-      const requestData = {
-        email: this.state.controls.email.value,
-        password: this.state.controls.password.value,
-        returnSecureToken: true
-      };
-      callServer("su", requestData)
-        .then(res => {
-          this.setState({ loading: false });
-          this.signIn(res);
-        })
-        .catch(err => {
-          // console.log(err);
-          errorMessage.push("Mã lỗi: " + err.code);
-          errorMessage.push(err.message);
-          this.setState({ loading: false, errorMessage: errorMessage });
-        });
-    }
-  };
+  //   if (errorMessage.length === 0) {
+  //     this.setState({ loading: true });
+  //     const requestData = {
+  //       email: this.state.controls.email.value,
+  //       password: this.state.controls.password.value,
+  //       returnSecureToken: true
+  //     };
+  //     callServer("su", requestData)
+  //       .then(res => {
+  //         this.setState({ loading: false });
+  //         this.signIn(res);
+  //       })
+  //       .catch(err => {
+  //         // console.log(err);
+  //         errorMessage.push("Mã lỗi: " + err.code);
+  //         errorMessage.push(err.message);
+  //         this.setState({ loading: false, errorMessage: errorMessage });
+  //       });
+  //   }
+  // };
+
+  /**
+   * Signin process handler
+   */
+  // signInHandler = event => {
+  //   event.preventDefault();
+  //   let errorMessage = [];
+  //   if (
+  //     this.state.controls.email.value === "" &&
+  //     this.state.controls.password.value === ""
+  //   )
+  //     errorMessage.push("EMAIL và PASSWORD không được rỗng");
+  //   else {
+  //     if (this.state.controls.email.value === "")
+  //       errorMessage.push("EMAIL không được rỗng");
+  //     if (this.state.controls.password.value === "")
+  //       errorMessage.push("PASSWORD không được rỗng");
+  //   }
+  //   for (let key in this.state.controls) {
+  //     if (this.state.controls[key].status.errorMessage !== "") {
+  //       errorMessage = errorMessage.concat(
+  //         this.state.controls[key].status.errorMessage
+  //       );
+  //     }
+  //   }
+  //   this.setState({ errorMessage: errorMessage });
+
+  //   if (errorMessage.length === 0) {
+  //     this.setState({ loading: true });
+  //     const requestData = {
+  //       email: this.state.controls.email.value,
+  //       password: this.state.controls.password.value,
+  //       returnSecureToken: true
+  //     };
+  //     callServer("si", requestData)
+  //       .then(res => {
+  //         this.setState({ loading: false });
+  //         this.signIn(res);
+  //       })
+  //       .catch(err => {
+  //         // console.log(err);
+  //         errorMessage.push("Mã lỗi: " + err.code);
+  //         errorMessage.push(err.message);
+  //         this.setState({ loading: false, errorMessage: errorMessage });
+  //       });
+  //   }
+  // };
 
   /**
    * Signin process handler
@@ -148,10 +195,56 @@ class Login extends Component {
       this.setState({ loading: true });
       const requestData = {
         email: this.state.controls.email.value,
-        password: this.state.controls.password.value,
-        returnSecureToken: true
+        password: this.state.controls.password.value
       };
-      callServer("si", requestData)
+      getAuth("si", requestData)
+        .then(res => {
+          this.setState({ loading: false });
+          this.signIn(res);
+        })
+        .catch(err => {
+          // console.log(err);
+          errorMessage.push("Mã lỗi: " + err.code);
+          errorMessage.push(err.message);
+          this.setState({ loading: false, errorMessage: errorMessage });
+        });
+    }
+  };
+
+  
+  /**
+   * Signup process handler
+   */
+  signUpHandler = event => {
+    event.preventDefault();
+    let errorMessage = [];
+    if (
+      this.state.controls.email.value === "" &&
+      this.state.controls.password.value === ""
+    )
+      errorMessage.push("EMAIL và PASSWORD không được rỗng");
+    else {
+      if (this.state.controls.email.value === "")
+        errorMessage.push("EMAIL không được rỗng");
+      if (this.state.controls.password.value === "")
+        errorMessage.push("PASSWORD không được rỗng");
+    }
+    for (let key in this.state.controls) {
+      if (this.state.controls[key].status.errorMessage !== "") {
+        errorMessage = errorMessage.concat(
+          this.state.controls[key].status.errorMessage
+        );
+      }
+    }
+    this.setState({ errorMessage: errorMessage });
+
+    if (errorMessage.length === 0) {
+      this.setState({ loading: true });
+      const requestData = {
+        email: this.state.controls.email.value,
+        password: this.state.controls.password.value
+      };
+      getAuth("su", requestData)
         .then(res => {
           this.setState({ loading: false });
           this.signIn(res);

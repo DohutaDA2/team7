@@ -1,6 +1,6 @@
-import Firebase from "firebase/app";
-import "firebase/app";
+import firebase from "firebase/app";
 import "firebase/firestore";
+import "firebase/auth";
 
 const config = {
   apiKey: "AIzaSyBzl6FcLr0BaxAL7wpw8B7zNQa9wlAYk6g",
@@ -11,7 +11,7 @@ const config = {
   messagingSenderId: "407828220548"
 };
 
-const auth = {
+export const AUTH = {
   url:
     "https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyCustomToken?key=AIzaSyBzl6FcLr0BaxAL7wpw8B7zNQa9wlAYk6g",
   signUpURL:
@@ -20,9 +20,18 @@ const auth = {
     "https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=AIzaSyBzl6FcLr0BaxAL7wpw8B7zNQa9wlAYk6g"
 };
 
-const firebaseCore = Firebase.initializeApp(config);
-const firestoreCore = firebaseCore.firestore();
+if (!firebase.apps.length) {
+  firebase.initializeApp(config);
+}
+
+const firestoreCore = firebase.firestore();
 firestoreCore.settings({ timestampsInSnapshots: true });
 
-export default firebaseCore;
-export { auth };
+const auth = firebase.auth();
+export const doCreateUserWithEmailAndPwd = (email, pwd) =>
+  auth.createUserWithEmailAndPassword(email, pwd);
+export const doSignInWithEmailAndPassword = (email, pwd) =>
+  auth.signInWithEmailAndPassword(email, pwd);
+export const doSignOut = () => auth.signOut();
+
+export { auth, firestoreCore, firebase };

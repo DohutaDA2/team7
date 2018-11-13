@@ -12,7 +12,7 @@ describe("Kiểm tra component", () => {
     expect(component).toMatchSnapshot();
   });
 
-  it("phải thay đổi state khi inputs thay đổi", () => {
+  it("State phải thay đổi khi input thay đổi, xuất hiện message khi sai validatity", () => {
     const component = mount(<Login />);
 
     component
@@ -30,7 +30,6 @@ describe("Kiểm tra component", () => {
     component
       .find(Button)
       .at(2)
-      .simulate("click")
       .simulate("click");
 
     expect(component.state().errorMessage.length).toBeGreaterThan(0);

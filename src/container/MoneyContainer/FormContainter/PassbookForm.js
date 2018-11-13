@@ -14,12 +14,14 @@ import {
   getBanks,
   getTerms,
   getPayments,
+  getEndCondition,
   saveNewPassbook,
   updatePassbook
 } from "../../../hoc/business/business";
 import { toShortDate } from "../../../hoc/business/refineUI";
 import { checkValidityForm } from "../../../hoc/business/checkValidity";
 import moment from "moment";
+import withAuthentication from "../../../hoc/withAuth/withAuthentication";
 
 class NewPassbook extends Component {
   state = {
@@ -94,12 +96,44 @@ class NewPassbook extends Component {
         },
         touched: false
       },
+      endconditionid: {
+        elementType: "select",
+        elementConfig: {
+          placeholder: "Chọn phương thức tất toán khi đến hạn",
+          options: []
+        },
+        value: "",
+        validation: {},
+        status: {
+          valid: false,
+          errorMessage: ""
+        },
+        touched: false
+      },
       interestRate: {
         elementType: "input",
         elementConfig: {
           type: "text",
           placeholder: "Lãi suất tiết kiệm",
-          disabled: true
+          disabled: false
+        },
+        value: "",
+        validation: {
+          required: true,
+          isGreaterThan0: true
+        },
+        status: {
+          valid: false,
+          errorMessage: ""
+        },
+        touched: false
+      },
+      unlimitInterestRate: {
+        elementType: "input",
+        elementConfig: {
+          type: "text",
+          placeholder: "Lãi suất tiết kiệm không kỳ hạn",
+          disabled: false
         },
         value: "",
         validation: {
@@ -166,6 +200,8 @@ class NewPassbook extends Component {
       let banks = await getBanks();
       let terms = await getTerms();
       let payments = await getPayments();
+      let endConditions = await getEndCondition();
+
       let banksOptions = banks.map(bank => {
         return {
           value: bank.id,
@@ -188,11 +224,18 @@ class NewPassbook extends Component {
           description: payment.description
         };
       });
+      let endConditionOptions = endConditions.map(condition => {
+        return {
+          value: condition.id,
+          displayValue: condition.name
+        };
+      });
 
       let updatedControls = { ...this.state.controls };
       updatedControls.bankid.elementConfig.options = banksOptions;
       updatedControls.termid.elementConfig.options = termsOptions;
       updatedControls.paymentid.elementConfig.options = paymentsOptions;
+      updatedControls.endconditionid.elementConfig.options = endConditionOptions;
 
       if (isNew) {
         updatedControls.bankid.value = banks[0].id;
@@ -200,9 +243,9 @@ class NewPassbook extends Component {
         updatedControls.termid.value = terms[0].id;
         updatedControls.termid.term = terms[0].term;
         updatedControls.paymentid.value = payments[0].id;
-        updatedControls.interestRate.value = banks[0].unlimitRate;
-
-        console.log(updatedControls);
+        updatedControls.endconditionid.value = endConditions[0].id;
+        updatedControls.interestRate.value = 1;
+        updatedControls.unlimitInterestRate.value = 0.05;
       } else {
         const query = new URLSearchParams(this.props.location.search);
         for (let param of query.entries()) {
@@ -217,9 +260,9 @@ class NewPassbook extends Component {
         updatedControls.termid.value = data.termId;
         updatedControls.termid.term = data.term;
         updatedControls.paymentid.value = data.paymentId;
+        updatedControls.endconditionid.value = data.endConditionId;
         updatedControls.interestRate.value = data.interestRate;
-        updatedControls.interestRate.elementConfig.disabled =
-          data.termId === "t00" ? true : false;
+        updatedControls.unlimitInterestRate.value = data.unlimitInterestRate;
         updatedControls.passbookName.value = data.passbookName;
         updatedControls.balance.value = data.balance;
         updatedControls.opendate.value = moment(data.opendate, "DD/MM/YYYY");
@@ -248,84 +291,113 @@ class NewPassbook extends Component {
     try {
       let updatedControls = { ...this.state.controls };
 
-      if (controlName === "termid" && event.target.value === "t00") {
+      // if (controlName === "termid" && event.target.value === "t00") {
+      //   updatedControls = {
+      //     ...updatedControls,
+      //     termid: {
+      //       ...updatedControls.termid,
+      //       status: checkValidityForm(
+      //         controlName,
+      //         event.target.value,
+      //         this.state.controls[controlName].validation
+      //       ),
+      //       value: event.target.value,
+      //       term: 0,
+      //       touched: true
+      //     }
+      //   };
+      //   updatedControls = {
+      //     ...updatedControls,
+      //     interestRate: {
+      //       ...updatedControls.interestRate,
+      //       value: updatedControls.bankid.unlimitRate,
+      //       elementConfig: {
+      //         ...updatedControls.interestRate.elementConfig,
+      //         disabled: true
+      //       }
+      //     }
+      //   };
+      // } else if (controlName === "termid" && event.target.value !== "t00") {
+      //   updatedControls = {
+      //     ...updatedControls,
+      //     termid: {
+      //       ...updatedControls.termid,
+      //       status: checkValidityForm(
+      //         controlName,
+      //         event.target.value,
+      //         this.state.controls[controlName].validation
+      //       ),
+      //       value: event.target.value,
+      //       term: updatedControls.termid.elementConfig.options.find(
+      //         x => x.value === event.target.value
+      //       ).term,
+      //       touched: true
+      //     }
+      //   };
+      //   updatedControls = {
+      //     ...updatedControls,
+      //     interestRate: {
+      //       ...updatedControls.interestRate,
+      //       elementConfig: {
+      //         ...updatedControls.interestRate.elementConfig,
+      //         disabled: false
+      //       }
+      //     }
+      //   };
+      // } else if (controlName === "bankid") {
+      //   updatedControls = {
+      //     ...updatedControls,
+      //     bankid: {
+      //       ...updatedControls.bankid,
+      //       status: checkValidityForm(
+      //         controlName,
+      //         event.target.value,
+      //         updatedControls.bankid.validation
+      //       ),
+      //       value: event.target.value,
+      //       unlimitRate: updatedControls.bankid.elementConfig.options.find(
+      //         x => x.value === event.target.value
+      //       ).unlimitRate,
+      //       touched: true
+      //     }
+      //   };
+      //   updatedControls = {
+      //     ...updatedControls,
+      //     interestRate: {
+      //       ...updatedControls.interestRate,
+      //       elementConfig: {
+      //         ...updatedControls.interestRate.elementConfig
+      //       },
+      //       value: updatedControls.bankid.unlimitRate
+      //     }
+      //   };
+      // } else {
+      //   updatedControls = {
+      //     ...updatedControls,
+      //     [controlName]: {
+      //       ...updatedControls[controlName],
+      //       status: checkValidityForm(
+      //         controlName,
+      //         controlName !== "opendate" ? event.target.value : event,
+      //         this.state.controls[controlName].validation
+      //       ),
+      //       value: controlName !== "opendate" ? event.target.value : event,
+      //       touched: true
+      //     }
+      //   };
+      // }
+      if (controlName === "unlimitInterestRate") {
         updatedControls = {
           ...updatedControls,
-          termid: {
-            ...updatedControls.termid,
+          unlimitInterestRate: {
+            ...updatedControls.unlimitInterestRate,
             status: checkValidityForm(
               controlName,
-              event.target.value,
+              event.target.value === undefined ? 0.05 : event.target.value,
               this.state.controls[controlName].validation
             ),
-            value: event.target.value,
-            term: 0,
+            value: event.target.value ? event.target.value : 0.05,
             touched: true
-          }
-        };
-        updatedControls = {
-          ...updatedControls,
-          interestRate: {
-            ...updatedControls.interestRate,
-            value: updatedControls.bankid.unlimitRate,
-            elementConfig: {
-              ...updatedControls.interestRate.elementConfig,
-              disabled: true
-            }
-          }
-        };
-      } else if (controlName === "termid" && event.target.value !== "t00") {
-        updatedControls = {
-          ...updatedControls,
-          termid: {
-            ...updatedControls.termid,
-            status: checkValidityForm(
-              controlName,
-              event.target.value,
-              this.state.controls[controlName].validation
-            ),
-            value: event.target.value,
-            term: updatedControls.termid.elementConfig.options.find(
-              x => x.value === event.target.value
-            ).term,
-            touched: true
-          }
-        };
-        updatedControls = {
-          ...updatedControls,
-          interestRate: {
-            ...updatedControls.interestRate,
-            elementConfig: {
-              ...updatedControls.interestRate.elementConfig,
-              disabled: false
-            }
-          }
-        };
-      } else if (controlName === "bankid") {
-        updatedControls = {
-          ...updatedControls,
-          bankid: {
-            ...updatedControls.bankid,
-            status: checkValidityForm(
-              controlName,
-              event.target.value,
-              updatedControls.bankid.validation
-            ),
-            value: event.target.value,
-            unlimitRate: updatedControls.bankid.elementConfig.options.find(
-              x => x.value === event.target.value
-            ).unlimitRate,
-            touched: true
-          }
-        };
-        updatedControls = {
-          ...updatedControls,
-          interestRate: {
-            ...updatedControls.interestRate,
-            elementConfig: {
-              ...updatedControls.interestRate.elementConfig
-            },
-            value: updatedControls.bankid.unlimitRate
           }
         };
       } else {
@@ -372,18 +444,18 @@ class NewPassbook extends Component {
       let passbookData = {
         balance: this.state.controls.balance.value,
         bankId: this.state.controls.bankid.value,
-        end: this.state.controls.end,
-        enddate: this.state.controls.opendate.value
-          .add(this.state.controls.termid.term, "months")
-          .toDate(),
+        end: false,
+        enddate: "",
+        endConditionId: this.state.controls.endconditionid.value,
         interestRate: this.state.controls.interestRate.value,
+        unlimitInterestRate: this.state.controls.unlimitInterestRate.value,
         interestPayment: this.state.controls.paymentid.value,
         name: this.state.controls.passbookName.value,
         opendate: this.state.controls.opendate.value.toDate(),
         termId: this.state.controls.termid.value
       };
 
-      if (this.state.userInfo.isNew) {
+      if (this.state.isNew) {
         saveNewPassbook(this.state.userInfo, passbookData)
           .then(res => {
             try {
@@ -420,36 +492,11 @@ class NewPassbook extends Component {
   redirect = () => {
     const queryParams = [];
     const sendData = this.state.isNew
-      ? {
-          ...this.state.passbook,
-          passbookName: this.state.controls.passbookName.value,
-          balance: this.state.controls.balance.value,
-          bankId: this.state.controls.bankid.value,
-          bankFullname: this.state.controls.bankid.elementConfig.options.find(
-            x => x.value === this.state.controls.bankid.value
-          ).displayValue,
-          bankShortname: this.state.controls.bankid.elementConfig.options.find(
-            x => x.value === this.state.controls.bankid.value
-          ).shortname,
-          opendate: this.state.controls.opendate.value.format("DD/MM/YYYY"),
-          termId: this.state.controls.termid.value,
-          termDes: this.state.controls.termid.elementConfig.options.find(
-            x => x.value === this.state.controls.termid.value
-          ).displayValue,
-          term: this.state.controls.termid.elementConfig.options.find(
-            x => x.value === this.state.controls.termid.value
-          ).term,
-          paymentId: this.state.controls.paymentid.value,
-          paymentDesc: this.state.controls.paymentid.elementConfig.options.find(
-            x => x.value === this.state.controls.paymentid.value
-          ).description,
-          unlimitRate: this.state.controls.bankid.unlimitRate
-        }
-      : this.state.passbook;
+      ? { ...this.state.userInfo }
+      : { ...this.state.passbook, ...this.state.userInfo };
     delete sendData.log;
-
     for (let key in sendData) {
-      if (!sendData[key]) {
+      if (!sendData[key] && key != "enddate") {
         let error = {
           code: "NULL_VALUE",
           message: `Giá trị ${key} rỗng, liên hệ nhà cung cấp dịch vụ.`
@@ -461,10 +508,16 @@ class NewPassbook extends Component {
       );
     }
     const queryString = queryParams.join("&");
-    this.props.history.push({
-      pathname: "/detail",
-      search: "?" + queryString
-    });
+    if (!this.state.isNew)
+      this.props.history.push({
+        pathname: "/detail",
+        search: "?" + queryString
+      });
+    else
+      this.props.history.push({
+        pathname: "/home",
+        search: "?" + queryString
+      });
   };
 
   // TODO: hiện thông báo xác nhận đóng form
@@ -478,7 +531,7 @@ class NewPassbook extends Component {
   };
 
   fatalHandler = () => {
-    this.setState({ error: "" });
+    this.history.goBack();
   };
 
   render() {
@@ -583,4 +636,4 @@ class NewPassbook extends Component {
   }
 }
 
-export default NewPassbook;
+export default withAuthentication(NewPassbook);

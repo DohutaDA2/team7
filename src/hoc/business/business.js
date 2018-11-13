@@ -1,6 +1,20 @@
-import firebaseCore from "../../firebaseConfig";
+import { firebase } from "../../firebaseConfig";
 import { toShortDate } from "./refineUI";
 import moment from "moment";
+
+/**
+ * TODO: tập hợp các action tính từ lúc mở sổ cho đến thời điểm hiện tại: LOGS
+ * rút tiền,
+ * gửi thêm,
+ * tái tục gốc + lãi,
+ * tái tục gốc
+ * tất toán và đóng,
+ *
+ * global:
+ * gốc,
+ * lãi,
+ * bank_id
+ */
 
 /**
  * Group an array by key's value
@@ -48,7 +62,7 @@ export { groupBy };
 //         message: "Lỗi kết nối, vui lòng thử lại sau."
 //       });
 //     else {
-//       let db = firebaseCore.firestore();
+//       let db = firebase.firestore();
 //       db.collection("passbooks")
 //         .where("user", "==", userInfo.userId)
 //         .get()
@@ -71,7 +85,7 @@ export { groupBy };
 //                         data.bankId = bank.id;
 //                         data.bankShortname = bank.data().shortname;
 //                         data.bankFullname = bank.data().fullname;
-//                         data.unlimitRate = bank.data().unlimitrate;
+//                        // data.unlimitRate = bank.data().unlimitrate;
 //                         data.end = x.data().end;
 //                         data.enddate = toShortDate(x.data().enddate.toDate());
 //                         data.paymentId = payment.id;
@@ -139,7 +153,7 @@ const loadBanks = () =>
         message: "Lỗi kết nối, vui lòng thử lại sau."
       });
     else {
-      let db = firebaseCore.firestore();
+      let db = firebase.firestore();
       let banks = [];
 
       db.collection("banks")
@@ -149,8 +163,7 @@ const loadBanks = () =>
             let bank = {
               id: x.id,
               fullName: x.data().fullname,
-              shortName: x.data().shortname,
-              unlimitrate: x.data().unlimitrate
+              shortName: x.data().shortname
             };
             banks.push(bank);
           });
@@ -172,7 +185,7 @@ const loadInterestPayment = () =>
   !navigator.onLine
     ? { code: "NETWORK", errorMessage: "Lỗi kết nối, vui lòng thử lại sau." }
     : new Promise((resolve, reject) => {
-        let db = firebaseCore.firestore();
+        let db = firebase.firestore();
         let payments = [];
 
         db.collection("interestpayment")
@@ -201,9 +214,12 @@ const loadInterestPayment = () =>
  */
 const loadTermEnd = () =>
   !navigator.onLine
-    ? { code: "NETWORK", errorMessage: "Lỗi kết nối, vui lòng thử lại sau." }
+    ? {
+        code: "ERROR_CONNECTION",
+        errorMessage: "Lỗi kết nối, vui lòng thử lại sau."
+      }
     : new Promise((resolve, reject) => {
-        let db = firebaseCore.firestore();
+        let db = firebase.firestore();
         let termEnd = [];
 
         db.collection("termend")
@@ -232,9 +248,12 @@ const loadTermEnd = () =>
  */
 const loadTerms = () =>
   !navigator.onLine
-    ? { code: "NETWORK", errorMessage: "Lỗi kết nối, vui lòng thử lại sau." }
+    ? {
+        code: "ERROR_CONNECTION",
+        errorMessage: "Lỗi kết nối, vui lòng thử lại sau."
+      }
     : new Promise((resolve, reject) => {
-        let db = firebaseCore.firestore();
+        let db = firebase.firestore();
         let terms = [];
 
         db.collection("termend")
@@ -260,9 +279,12 @@ const loadTerms = () =>
  */
 const loadLog = passbookId =>
   !navigator.onLine
-    ? { code: "NETWORK", errorMessage: "Lỗi kết nối, vui lòng thử lại sau." }
+    ? {
+        code: "ERROR_CONNECTION",
+        errorMessage: "Lỗi kết nối, vui lòng thử lại sau."
+      }
     : new Promise((resolve, reject) => {
-        let db = firebaseCore.firestore();
+        let db = firebase.firestore();
         let logs = [];
 
         db.collection("passbooks")
@@ -296,103 +318,160 @@ const loadLog = passbookId =>
  */
 const loadPassbooks = async userInfo => {
   try {
-    let db = firebaseCore.firestore();
+    const user = firebase.auth().currentUser;
+    let db = firebase.firestore();
     let query = db
       .collection("passbooks")
-      .where("user", "==", userInfo.userId)
-      .get();
-    return await query.then(async docs => {
-      let promises = [];
-      docs.forEach(doc => {
-        promises.push(getOneDoc(doc));
+      .where("user", "==", user.uid)
+      .get()
+      .catch(error => {
+        throw error;
       });
-      return Promise.all(promises).then(res => {
-        return groupBy(res, "end");
+    return await query
+      .then(async docs => {
+        let promises = [];
+        docs.forEach(doc => {
+          promises.push(getOneDoc(doc));
+        });
+        return Promise.all(promises)
+          .then(res => {
+            return groupBy(res, "end");
+          })
+          .catch(error => {
+            throw error;
+          });
+      })
+      .catch(error => {
+        throw error;
       });
-    });
   } catch (error) {
     console.log(error);
-    let err = { code: "ERROR_DATABASE", message: "Lỗi kết nối và lấy dữ liệu" };
+    let err = {
+      code: "ERROR_CONNECTION",
+      message: "Lỗi kết nối và lấy dữ liệu"
+    };
     throw err;
   }
 };
 
 const loadPassbook = async (userInfo, passbookId) => {
   try {
-    const db = firebaseCore.firestore();
+    const db = firebase.firestore();
     const query = db
       .collection("passbooks")
       .doc(passbookId)
-      .get();
-    return await query.then(async doc => {
-      const passbook = await getOneDoc(doc);
-      if (passbook.user !== userInfo.userId) {
-        const error = { code: "ERROR_DATA", message: "Không khớp ID" };
+      .get()
+      .catch(error => {
         throw error;
-      }
-      return passbook;
-    });
+      });
+    return await query
+      .then(async doc => {
+        const passbook = await getOneDoc(doc);
+        if (passbook.user !== userInfo.userId) {
+          const error = { code: "ERROR_DATA", message: "Không khớp ID" };
+          throw error;
+        }
+        return passbook;
+      })
+      .catch(error => {
+        throw error;
+      });
   } catch (error) {
     console.log(error);
-    let err = { code: "ERROR_DATABASE", message: "Lỗi kết nối và lấy dữ liệu" };
+    let err = {
+      code: "ERROR_CONNECTION",
+      message: "Lỗi kết nối và lấy dữ liệu"
+    };
     throw err;
   }
 };
 
 const getOneDoc = async doc => {
-  let queryBank = await doc
-    .data()
-    .bank_id.get()
-    .then(bank => {
-      let bankData = { ...bank.data(), id: bank.id };
-      return bankData;
+  try {
+    let queryBank = await doc
+      .data()
+      .bank_id.get()
+      .then(bank => {
+        let bankData = { ...bank.data(), id: bank.id };
+        return bankData;
+      })
+      .catch(error => {
+        throw error;
+      });
+    let queryTerm = await doc
+      .data()
+      .term_id.get()
+      .then(term => {
+        let termData = { ...term.data(), id: term.id };
+        return termData;
+      })
+      .catch(error => {
+        throw error;
+      });
+    let queryPayment = await doc
+      .data()
+      .interest_payment.get()
+      .then(payment => {
+        let paymentData = { ...payment.data(), id: payment.id };
+        return paymentData;
+      })
+      .catch(error => {
+        throw error;
+      });
+    let queryEndCondition = await doc
+      .data()
+      .endcondition_id.get()
+      .then(condition => {
+        let endcondition = { ...condition.data(), id: condition.id };
+        return endcondition;
+      })
+      .catch(error => {
+        throw error;
+      });
+    let queryLog = await getLogs(doc.id).catch(error => {
+      throw error;
     });
-  let queryTerm = await doc
-    .data()
-    .term_id.get()
-    .then(term => {
-      let termData = { ...term.data(), id: term.id };
-      return termData;
-    });
-  let queryPayment = await doc
-    .data()
-    .interest_payment.get()
-    .then(payment => {
-      let paymentData = { ...payment.data(), id: payment.id };
-      return paymentData;
-    });
-  let queryLog = await getLogs(doc.id);
-  let data = {};
-  data.id = doc.id;
-  data.passbookName = doc.data().name;
-  data.bankId = queryBank.id;
-  data.bankShortname = queryBank.shortname;
-  data.bankFullname = queryBank.fullname;
-  data.unlimitRate = queryBank.unlimitrate;
-  data.end = doc.data().end;
-  data.enddate = toShortDate(doc.data().enddate.toDate());
-  data.paymentId = queryPayment.id;
-  data.paymentName = queryPayment.name;
-  data.pyamentDesc = queryPayment.description;
-  data.interestRate = parseFloat(doc.data().interest_rate);
-  data.opendate = toShortDate(doc.data().opendate.toDate());
-  data.termId = queryTerm.id;
-  data.term = parseInt(queryTerm.term);
-  data.termDes = queryTerm.description;
-  data.balance = parseFloat(doc.data().balance);
-  data.realBalance = calculate(
-    data.log,
-    data.balance,
-    data.interestRate,
-    data.unlimitRate,
-    data.opendate,
-    data.term,
-    data.end,
-    data.paymentId
-  );
-  data.user = doc.data().user;
-  data.log = queryLog;
-  return data;
+    let data = {};
+    data.id = doc.id;
+    data.passbookName = doc.data().name;
+    data.bankId = queryBank.id;
+    data.bankShortname = queryBank.shortname;
+    data.bankFullname = queryBank.fullname;
+    data.end = doc.data().end;
+    data.enddate = doc.data().enddate
+      ? toShortDate(doc.data().enddate.toDate())
+      : "";
+    data.endConditionId = queryEndCondition.id;
+    data.endConditionName = queryEndCondition.name;
+    data.paymentId = queryPayment.id;
+    data.paymentName = queryPayment.name;
+    data.pyamentDesc = queryPayment.description;
+    data.interestRate = parseFloat(doc.data().interest_rate);
+    data.unlimitInterestRate = parseFloat(doc.data().unlimit_interest_rate);
+    data.opendate = toShortDate(doc.data().opendate.toDate());
+    data.termId = queryTerm.id;
+    data.term = parseInt(queryTerm.term);
+    data.termDes = queryTerm.description;
+    data.balance = parseFloat(doc.data().balance);
+    data.user = doc.data().user;
+    data.log = queryLog;
+    // console.log(data.log);
+    data.realBalance = calculate(
+      data.log,
+      data.balance,
+      data.interestRate,
+      data.unlimitInterestRate,
+      data.opendate,
+      data.term,
+      data.end,
+      data.enddate,
+      data.paymentId,
+      data.endConditionId
+    );
+    return data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 /**
@@ -408,7 +487,7 @@ const getPassbooks = async userInfo => {
     throw error;
   } else {
     try {
-      let db = firebaseCore.firestore();
+      let db = firebase.firestore();
       let trueArr = [];
       let falseArr = [];
       let docs = await db
@@ -420,6 +499,7 @@ const getPassbooks = async userInfo => {
         let getBank = await doc.data().bank_id.get();
         let getTerm = await doc.data().term_id.get();
         let getPayment = await doc.data().interest_payment.get();
+        let getEndCondition = await doc.data().endcondition_id.get();
 
         let data = {
           id: doc.id,
@@ -428,11 +508,14 @@ const getPassbooks = async userInfo => {
           bankShortname: getBank.data().shortname,
           bankFullname: getBank.data().fullname,
           end: doc.data().end,
-          enddate: doc.data().enddate,
+          enddate: toShortDate(doc.data().enddate.toDate()),
+          endConditionId: getEndCondition.id,
+          endConditionName: getEndCondition.data().name,
           paymentId: getPayment.id,
           paymentName: getPayment.data().name,
           pyamentDesc: getPayment.data().description,
           interestRate: parseFloat(doc.data().interest_rate),
+          unlimitInterestRate: parseFloat(doc.data().unlimit_interest_rate),
           opendate: toShortDate(doc.data().opendate.toDate()),
           termId: getTerm.id,
           term: parseInt(getTerm.data().term),
@@ -468,14 +551,13 @@ const getBanks = async () => {
   } else {
     let banks = [];
     try {
-      let db = firebaseCore.firestore();
+      let db = firebase.firestore();
       let docs = await db.collection("banks").get();
       for (let doc of docs.docs) {
         let data = {
           id: doc.id,
           shortname: doc.data().shortname,
-          fullname: doc.data().fullname,
-          unlimitRate: doc.data().unlimitrate
+          fullname: doc.data().fullname
         };
         banks.push(data);
       }
@@ -504,7 +586,7 @@ const getTerms = async () => {
   } else {
     let terms = [];
     try {
-      let db = firebaseCore.firestore();
+      let db = firebase.firestore();
       let docs = await db.collection("terms").get();
       for (let doc of docs.docs) {
         let data = {
@@ -536,7 +618,7 @@ const getPayments = async () => {
   } else {
     let payments = [];
     try {
-      let db = firebaseCore.firestore();
+      let db = firebase.firestore();
       let docs = await db.collection("interestpayment").get();
       for (let doc of docs.docs) {
         let data = {
@@ -558,6 +640,37 @@ const getPayments = async () => {
   }
 };
 
+const getEndCondition = async () => {
+  if (!navigator.onLine) {
+    const error = {
+      code: "NETWORK",
+      message: "Lỗi kết nối, vui lòng thử lại sau."
+    };
+    throw error;
+  } else {
+    let endcondition = [];
+    try {
+      let db = firebase.firestore();
+      let docs = await db.collection("endcondition").get();
+      for (let doc of docs.docs) {
+        let data = {
+          id: doc.id,
+          name: doc.data().name
+        };
+        endcondition.push(data);
+      }
+      // console.log(endcondition);
+      return endcondition;
+    } catch (err) {
+      const error = {
+        code: "GET_PAYMENTS",
+        message: "Không thể lấy dữ liệu các Phương thức thanh toán Lãi"
+      };
+      throw error;
+    }
+  }
+};
+
 const getLogs = async passbookId => {
   if (!navigator.onLine) {
     const error = {
@@ -567,7 +680,7 @@ const getLogs = async passbookId => {
     throw error;
   } else {
     let logs = [];
-    let db = firebaseCore.firestore();
+    let db = firebase.firestore();
     let coll = await db.collection(`passbooks/${passbookId}/log`).get();
     if (coll.docs) {
       coll.docs.forEach(doc => {
@@ -597,7 +710,7 @@ const getId = async (bankId, userId) => {
     throw error;
   } else {
     try {
-      let db = firebaseCore.firestore();
+      let db = firebase.firestore();
       let bank = await db.collection("banks").doc(bankId);
       return await db
         .collection("passbooks")
@@ -640,6 +753,7 @@ export {
   getBanks,
   getTerms,
   getPayments,
+  getEndCondition,
   getLogs,
   getId
 };
@@ -665,9 +779,10 @@ const saveNewPassbook = async (userInfo, passbookData) => {
     !passbookData.balance ||
     !passbookData.bankId ||
     passbookData.end === undefined ||
-    !passbookData.enddate ||
+    !passbookData.endConditionId ||
     !passbookData.interestRate ||
     !passbookData.interestPayment ||
+    !passbookData.unlimitInterestRate ||
     !passbookData.opendate ||
     !passbookData.termId
   ) {
@@ -678,7 +793,7 @@ const saveNewPassbook = async (userInfo, passbookData) => {
     throw error;
   }
 
-  let db = firebaseCore.firestore();
+  let db = firebase.firestore();
   let name =
     passbookData.name === ""
       ? await getId(passbookData.bankId, userInfo.userId)
@@ -686,10 +801,12 @@ const saveNewPassbook = async (userInfo, passbookData) => {
   let passbook = {
     balance: passbookData.balance,
     bank_id: db.doc("banks/" + passbookData.bankId),
-    end: passbookData.end,
-    enddate: passbookData.enddate,
+    endcondition_id: db.doc("endcondition/" + passbookData.endConditionId),
+    end: false,
+    enddate: "",
     interest_rate: passbookData.interestRate,
     interest_payment: db.doc("interestpayment/" + passbookData.interestPayment),
+    unlimit_interest_rate: passbookData.unlimitInterestRate,
     name: name,
     opendate: passbookData.opendate,
     term_id: db.doc("terms/" + passbookData.termId),
@@ -723,8 +840,7 @@ const updatePassbook = (passbookId, updatedObj) =>
         message: "Lỗi dữ liệu rỗng, không thể ghi nhận thay đổi."
       });
 
-    let db = firebaseCore.firestore();
-    console.log(updatedObj);
+    let db = firebase.firestore();
     let passbook = {
       balance: updatedObj.balance,
       bank_id: db.doc("banks/" + updatedObj.bankId),
@@ -736,7 +852,6 @@ const updatePassbook = (passbookId, updatedObj) =>
       opendate: updatedObj.opendate,
       term_id: db.doc("terms/" + updatedObj.termId)
     };
-    console.log(passbook);
     db.collection("passbooks")
       .doc(passbookId)
       .update(passbook)
@@ -754,35 +869,39 @@ const updatePassbook = (passbookId, updatedObj) =>
  * @param {string} passbookId
  * @param {obj} log
  */
-const saveLog = (passbookId, log) =>
-  new Promise((resolve, reject) => {
-    if (
-      passbookId === undefined ||
-      log === undefined ||
-      log.amount === undefined ||
-      log.time === undefined
-    )
-      reject({
+const saveLog = async (passbookId, log) => {
+  if (
+    passbookId === undefined ||
+    log === undefined ||
+    log.amount === undefined ||
+    log.time === undefined
+  )
+    return {
+      code: "SAVE_LOG",
+      message: "Lỗi dữ liệu rỗng, không thể ghi nhận thay đổi."
+    };
+  let db = firebase.firestore();
+  return await db
+    .collection("passbooks")
+    .doc(passbookId)
+    .collection("log")
+    .add(log)
+    .then(res => {
+      console.log(res);
+      return {
+        code: "OK",
+        message: `Ghi nhận log thành công. id: ${res.id}`
+      };
+    })
+    .catch(err => {
+      console.log(err);
+      return {
         code: "SAVE_LOG",
-        message: "Lỗi dữ liệu rỗng, không thể ghi nhận thay đổi."
-      });
-    let db = firebaseCore.firestore();
-    db.collection("passbook")
-      .doc(passbookId)
-      .add(log)
-      .then(res =>
-        resolve({
-          code: "OK",
-          message: `Ghi nhận log thành công. id: ${res.id}`
-        })
-      )
-      .catch(err =>
-        reject({
-          code: "SAVE_LOG",
-          message: "Lỗi không thể ghi nhận LOG"
-        })
-      );
-  });
+        message: "Lỗi không thể ghi nhận LOG"
+      };
+    });
+};
+
 
 export { updatePassbook, saveLog, saveNewPassbook };
 
@@ -816,21 +935,274 @@ const getDurationMonths = (begin, end) => {
   return Math.floor(moment.duration(b.diff(a)).asMonths());
 };
 
+/**
+ * Calculate the number of term count from the begining
+ * @param {Date} begin begin date
+ * @param {Date} end end date
+ * @param {Number} term Term duration (months)
+ */
+const getNumberOfTerms = (begin, end, term) => {
+  let a = new moment(begin, "DD/MM/YYYY");
+  let b = new moment(end, "DD/MM/YYYY").add(1, "day");
+  let numTerms = Math.floor(moment.duration(b.diff(a)).asMonths() / term);
+  let oddDays =
+    moment.duration(b.diff(a.add(numTerms * term, "months"))).asDays() - 1;
+  return { terms: numTerms, oddDays: oddDays };
+};
+/**
+ * Tính lãi có kỳ hạn
+ * @param {Number} root root balance
+ * @param {Number} rate Rate
+ * @param {Number} months Months
+ */
 const calculateLimit = (root, rate, months) =>
   Math.floor((root * (rate / 100) * months) / 12);
+
+/**
+ * Tính lãy không kỳ hạn
+ * @param {Number} root root balance
+ * @param {Number} rate Rate
+ * @param {Number} days Days
+ */
 const calculateUnLimit = (root, rate, days) =>
   Math.floor((root * (rate / 100) * days) / 360);
+
 /**
- * Tinh toan so du so tiet kiem
- * @param {object} log Danh sach log ghi nhan thay doi
- * @param {any} root So tien goc
- * @param {any} rate Lai suat co ky hanj
- * @param {any} unlimitrate Lai suat khong ky han
- * @param {any} opendate Ngay mo so
- * @param {any} term So thang gui
- * @param {any} end Da tat toan hay chua
- * @param {any} enddate Ngay tat toan
- * @param {any} payment Phuong thuc thanh toan lai
+ * Tính tiền lãi trong 1 kỳ hạn gửi
+ * @param {Object} log Lịch sử giao dịch
+ * @param {Number} root root balance
+ * @param {Number} rate Rate
+ * @param {Number} unlimitrate Unlimit term Rate
+ * @param {Number} term Months
+ */
+const calculateOneTerm = (log, root, rate, unlimitrate, opendate, term) => {
+  let profit = 0;
+  let balance = +root;
+  if (log) {
+    log.forEach(x => {
+      let xTime = moment(x.time, "DD/MM/YYYY");
+      if (
+        xTime < moment(opendate, "DD/MM/YYYY") ||
+        xTime > moment(opendate, "DD/MM/YYYY").add(term, "months")
+      )
+        return;
+      profit += calculateUnLimit(
+        +x.amount,
+        +unlimitrate,
+        getDurationDays(opendate, x.time)
+      );
+      balance -= x.amount;
+    });
+  }
+  profit += calculateLimit(+balance, +rate, +term);
+  return { profit: profit, balance: balance };
+};
+
+/**
+ * Tính lãi suất và số dư không kỳ hạn
+ * @param {Object} log Lịch sử giao dịch
+ * @param {Number} root Sô tiền gốc
+ * @param {Number} rate Lãi suất có kỳ hạn
+ * @param {Number} unlimitrate Lãi không kỳ hạn
+ * @param {Date} opendate Ngày mở sổ
+ * @param {Number} term Kỳ hạn (tháng)
+ * @param {Boolean} end Tất toán hay chưa
+ * @param {Date} enddate Ngày tất toán
+ * @param {String} payment Phương thức thanh toán lãi
+ * @param {String} endcondition Mã điều kiện đến hạn
+ */
+const caclculateProfitUnlimit = (
+  log,
+  root,
+  rate,
+  unlimitrate,
+  opendate,
+  term,
+  end,
+  enddate,
+  payment,
+  endcondition
+) => {
+  let profit = 0;
+  let balance = +root;
+  if (log) {
+    log.forEach(x => {
+      profit += calculateUnLimit(
+        +x.amount,
+        +unlimitrate,
+        getDurationDays(opendate, x.time)
+      );
+      balance -= x.amount;
+    });
+  }
+  profit = calculateUnLimit(
+    +balance,
+    +unlimitrate,
+    getDurationDays(
+      opendate,
+      enddate ? enddate : new moment().format("DD/MM/YYYY")
+    )
+  );
+  return { profit: profit, balance: balance };
+};
+
+/**
+ * Tính lãi suất và số dư có kỳ hạn
+ * @param {Object} log Lịch sử giao dịch
+ * @param {Number} root Sô tiền gốc
+ * @param {Number} rate Lãi suất có kỳ hạn
+ * @param {Number} unlimitrate Lãi không kỳ hạn
+ * @param {Date} opendate Ngày mở sổ
+ * @param {Number} term Kỳ hạn (tháng)
+ * @param {Boolean} end Tất toán hay chưa
+ * @param {Date} enddate Ngày tất toán
+ * @param {String} payment Phương thức thanh toán lãi
+ * @param {String} endcondition Mã điều kiện đến hạn
+ */
+const calculateProfitLimit = (
+  log,
+  root,
+  rate,
+  unlimitrate,
+  opendate,
+  term,
+  end,
+  enddate,
+  payment,
+  endcondition
+) => {
+  let profit = 0;
+  let balance = +root;
+  let duration = getNumberOfTerms(
+    opendate,
+    enddate ? enddate : new moment().format("DD/MM/YYYY"),
+    term
+  );
+  let opendateTemp = opendate;
+  // đã tất toán
+  if (end || enddate) {
+    if (duration.terms >= 1) {
+      for (let i = 0; i < duration.terms; i++) {
+        let temp = calculateOneTerm(
+          log,
+          +balance,
+          +rate,
+          +unlimitrate,
+          opendateTemp,
+          +term
+        );
+        if (endcondition === "e0") {
+          balance = temp.balance + temp.profit;
+        }
+        balance = temp.balance;
+        profit += temp.profit;
+        opendateTemp = moment(opendateTemp)
+          .add(+term, "months")
+          .add(1, "day")
+          .format("DD/MM/YYYY");
+      }
+    }
+    if (duration.oddDays > 0) {
+      let temp = caclculateProfitUnlimit(
+        log,
+        +balance,
+        +rate,
+        +unlimitrate,
+        opendateTemp,
+        +term,
+        end,
+        enddate,
+        payment,
+        endcondition
+      );
+      profit += temp.profit;
+      balance = temp.balance;
+    }
+    return { profit: profit, balance: balance };
+  }
+  // chưa tất toán
+  else {
+    if (
+      duration.terms >= 1 ||
+      (payment === "p0" && duration.terms === 0 && duration.oddDays > 0)
+    ) {
+      let termTemp = duration.terms;
+      if (duration.terms === 0 && duration.oddDays > 0 && payment === "p0")
+        termTemp += 1;
+      if (duration.terms > 0 && duration.oddDays > 0 && payment === "p0")
+        termTemp += 1;
+      for (let i = 0; i < termTemp; i++) {
+        let temp = calculateOneTerm(
+          log,
+          +balance,
+          +rate,
+          +unlimitrate,
+          opendateTemp,
+          +term
+        );
+        profit += temp.profit;
+        balance = temp.balance;
+        if (endcondition === "e0" && termTemp !== 1 && i + 1 < termTemp) {
+          balance = temp.balance + temp.profit;
+        }
+        if (endcondition === "e1" && termTemp !== 1 && i + 1 < termTemp) {
+          balance = temp.balance;
+        }
+        opendateTemp = moment(opendateTemp)
+          .add(+term, "months")
+          .add(1, "day")
+          .format("DD/MM/YYYY");
+      }
+      // if (
+      //   ((duration.terms < 1 && duration.oddDays > 0) ||
+      //     (duration.terms >= 1 && duration.oddDays > 0)) &&
+      //   payment !== "p1"
+      // ) {
+      //   let temp = caclculateProfitUnlimit(
+      //     log,
+      //     +balance,
+      //     +rate,
+      //     +unlimitrate,
+      //     opendate,
+      //     +term,
+      //     end,
+      //     enddate,
+      //     payment,
+      //     endcondition
+      //   );
+      //   profit += temp.profit;
+      //   balance = temp.balance;
+      // }
+      return { profit: profit, balance: balance };
+    }
+    // else {
+    //   let temp = calculateOneTerm(
+    //     log,
+    //     +balance,
+    //     +rate,
+    //     +unlimitrate,
+    //     opendate,
+    //     +term
+    //   );
+    //   balance = temp.balance;
+    //   profit += temp.profit;
+    // }
+  }
+  return { profit: profit, balance: balance };
+};
+
+/**
+ * Tinh lai suat và so du so tiet kiem
+ * @param {Object} log Lịch sử giao dịch
+ * @param {Number} root Sô tiền gốc
+ * @param {Number} rate Lãi suất có kỳ hạn
+ * @param {Number} unlimitrate Lãi không kỳ hạn
+ * @param {Date} opendate Ngày mở sổ
+ * @param {Number} term Kỳ hạn (tháng)
+ * @param {Boolean} end Tất toán hay chưa
+ * @param {Date} enddate Ngày tất toán
+ * @param {String} payment Phương thức thanh toán lãi
+ * @param {String} endcondition Mã điều kiện đến hạn
  */
 const calculate = (
   log,
@@ -841,115 +1213,223 @@ const calculate = (
   term,
   end,
   enddate,
-  payment
+  payment,
+  endcondition
 ) => {
-  let balance = +root;
-  let today = new moment().format("DD/MM/YYYY");
-  if (term != 0) {
-    if (end) {
-      balance += calculateLimit(+root, rate, term);
-      if (log) {
-        log.forEach(x => {
-          balance += calculateUnLimit(
-            x.amount,
-            unlimitrate,
-            getDurationDays(opendate, x.time)
-          );
-        });
-      }
-    } else {
+  let temp = 0;
+  let duration = null;
+
+  switch (+term) {
+    case 0:
+      temp = caclculateProfitUnlimit(
+        log,
+        +root,
+        +rate,
+        +unlimitrate,
+        opendate,
+        +term,
+        end,
+        enddate,
+        payment,
+        endcondition
+      );
+      return temp.balance + temp.profit;
+    default:
+      temp = calculateProfitLimit(
+        log,
+        +root,
+        +rate,
+        +unlimitrate,
+        opendate,
+        +term,
+        end,
+        enddate,
+        payment,
+        endcondition
+      );
       switch (payment) {
         case "p0":
-          balance += calculateLimit(+root, rate, term);
-          if (log) {
-            log.forEach(x => {
-              balance += calculateUnLimit(
-                x.amount,
-                unlimitrate,
-                getDurationDays(opendate, x.time)
-              );
-            });
-          }
-          break;
+          return temp.balance + temp.profit;
         case "p1":
+          duration = getNumberOfTerms(
+            opendate,
+            enddate ? enddate : new moment().format("DD/MM/YYYY"),
+            term
+          );
           if (
-            new moment() >= new moment().add(term, "months").subtract(1, "day")
+            new moment() ===
+            moment(opendate, "DD/MM/YYYY").add(term * duration.terms, "months")
           ) {
-            balance += calculateLimit(+root, rate, term);
-            if (log) {
-              log.forEach(x => {
-                balance += calculateUnLimit(
-                  x.amount,
-                  unlimitrate,
-                  getDurationDays(opendate, x.time)
-                );
-              });
-            }
+            return temp.balance + temp.profit;
           }
-          break;
-        case "p3":
-          if (new moment() >= new moment().endOf("month").subtract(1, "day")) {
-            balance += calculateLimit(
-              root,
-              rate,
-              getDurationMonths(opendate, today)
-            );
-            if (log) {
-              log.forEach(x => {
-                let time = new moment(x.time);
-                if (time <= new moment().subtract(1, "month").endOf("month")) {
-                  balance += calculateUnLimit(
-                    x.amount,
-                    unlimitrate,
-                    getDurationDays(opendate, x.time)
-                  );
-                }
-              });
-            }
+          if (end || enddate) {
+            return temp.balance + temp.profit;
           }
-          break;
+          return temp.balance;
         default:
-          break;
+          if (new moment() === moment().endOf("month")) {
+            return temp.balance + temp.profit;
+          }
+          if (end || enddate) {
+            return temp.balance + temp.profit;
+          }
+          return temp.balance;
       }
-    }
-  } else {
-    if (!end) {
-      balance += calculateUnLimit(
-        root,
-        unlimitrate,
-        getDurationDays(opendate, today)
-      );
-      if (log) {
-        log.forEach(x => {
-          balance += calculateUnLimit(
-            x.amount,
-            unlimitrate,
-            getDurationDays(opendate, x.time)
-          );
-        });
-      }
-    } else {
-      balance += calculateUnLimit(
-        root,
-        unlimitrate,
-        getDurationDays(opendate, enddate)
-      );
-      if (log) {
-        log.forEach(x => {
-          balance += calculateUnLimit(
-            x.amount,
-            unlimitrate,
-            getDurationDays(opendate, x.time)
-          );
-        });
-      }
-    }
   }
-  return Math.floor(balance);
 };
 
 export {
   calculate,
+  calculateProfitLimit,
+  caclculateProfitUnlimit,
+  calculateOneTerm,
+  getNumberOfTerms
+};
+
+// /**
+//  * Tinh lai suat và so du so tiet kiem
+//  * @param {Object} log Lịch sử giao dịch
+//  * @param {Number} root Sô tiền gốc
+//  * @param {Number} rate Lãi suất có kỳ hạn
+//  * @param {Number} unlimitrate Lãi không kỳ hạn
+//  * @param {Date} opendate Ngày mở sổ
+//  * @param {Number} term Kỳ hạn (tháng)
+//  * @param {Boolean} end Tất toán hay chưa
+//  * @param {Date} enddate Ngày tất toán
+//  * @param {String} payment Phương thức thanh toán lãi
+//  * @param {String} endcondition Mã điều kiện đến hạn
+//  */
+// const calculate = (
+//   log,
+//   root,
+//   rate,
+//   unlimitrate,
+//   opendate,
+//   term,
+//   end,
+//   enddate,
+//   payment,
+//   endcondition
+// ) => {
+//   let balance = +root;
+//   let today = new moment().format("DD/MM/YYYY");
+//   // Có kỳ hạn
+//   if (term != 0) {
+//     // Đã tất toán
+//     if (end) {
+//       balance += calculateLimit(+root, +rate, +term);
+//       if (log) {
+//         log.forEach(x => {
+//           balance += calculateUnLimit(
+//             +x.amount,
+//             +unlimitrate,
+//             getDurationDays(opendate, x.time)
+//           );
+//         });
+//       }
+//     }
+//     // Chưa tất toán
+//     else {
+//       switch (payment) {
+//         // trả lãi đầu kỳ
+//         case "p0":
+//           balance += calculateLimit(+root, +rate, +term);
+//           if (log) {
+//             log.forEach(x => {
+//               balance += calculateUnLimit(
+//                 +x.amount,
+//                 +unlimitrate,
+//                 getDurationDays(opendate, x.time)
+//               );
+//             });
+//           }
+//           break;
+//         // trả lãi cuối kỳ
+//         case "p1":
+//           if (
+//             new moment() >= new moment().add(term, "months").subtract(1, "day")
+//           ) {
+//             balance += calculateLimit(+root, +rate, +term);
+//             if (log) {
+//               log.forEach(x => {
+//                 balance += calculateUnLimit(
+//                   +x.amount,
+//                   +unlimitrate,
+//                   getDurationDays(opendate, x.time)
+//                 );
+//               });
+//             }
+//           }
+//           break;
+//         // trả lãi định kỳ
+//         case "p3":
+//           if (new moment() >= new moment().endOf("month").subtract(1, "day")) {
+//             balance += calculateLimit(
+//               +root,
+//               +rate,
+//               getDurationMonths(opendate, today)
+//             );
+//             if (log) {
+//               log.forEach(x => {
+//                 let time = new moment(x.time);
+//                 if (time <= new moment().subtract(1, "month").endOf("month")) {
+//                   balance += calculateUnLimit(
+//                     +x.amount,
+//                     +unlimitrate,
+//                     getDurationDays(opendate, x.time)
+//                   );
+//                 }
+//               });
+//             }
+//           }
+//           break;
+//         default:
+//           break;
+//       }
+//     }
+//   }
+//   // Không kỳ hạn
+//   else {
+//     // chưa tất toán
+//     if (!end) {
+//       balance += calculateUnLimit(
+//         +root,
+//         +unlimitrate,
+//         getDurationDays(opendate, today)
+//       );
+//       if (log) {
+//         log.forEach(x => {
+//           balance += calculateUnLimit(
+//             +x.amount,
+//             +unlimitrate,
+//             getDurationDays(opendate, x.time)
+//           );
+//         });
+//       }
+//     }
+//     // đã tất toán
+//     else {
+//       balance += calculateUnLimit(
+//         +root,
+//         +unlimitrate,
+//         getDurationDays(opendate, enddate)
+//       );
+//       if (log) {
+//         log.forEach(x => {
+//           balance += calculateUnLimit(
+//             +x.amount,
+//             +unlimitrate,
+//             getDurationDays(opendate, x.time)
+//           );
+//         });
+//       }
+//     }
+//   }
+//   return Math.floor(balance);
+// };
+
+export {
+  // calculate,
   calculateLimit,
   calculateUnLimit,
   getDurationDays,

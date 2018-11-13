@@ -1,14 +1,16 @@
 import moment from "moment";
+import { getEndDate } from "./refineUI";
 
 const checkValidityLogin = (name, value, rules) => {
   if (!name) {
     const error = { code: "NULL_VALUE", message: "Tên control bị rỗng." };
     throw error;
   }
-  if (!value) {
-    const error = { code: "NULL_VALUE", message: "Giá trị kiểm tra bị rỗng." };
-    throw error;
-  }
+
+  // if (!value) {
+  //   const error = { code: "NULL_VALUE", message: "Giá trị kiểm tra bị rỗng." };
+  //   throw error;
+  // }
 
   let isValid = true;
   let errorMessage = [];
@@ -56,10 +58,11 @@ const checkValidityForm = (name, value, rules) => {
     const error = { code: "NULL_VALUE", message: "Tên control bị rỗng." };
     throw error;
   }
-  if (!value) {
-    const error = { code: "NULL_VALUE", message: "Giá trị kiểm tra bị rỗng." };
-    throw error;
-  }
+
+  // if (!value) {
+  //   const error = { code: "NULL_VALUE", message: "Giá trị kiểm tra bị rỗng." };
+  //   throw error;
+  // }
 
   let isValid = true;
   let errorMessage = [];
@@ -109,4 +112,79 @@ const checkValidityForm = (name, value, rules) => {
   return { isValid, errorMessage };
 };
 
-export { checkValidityLogin, checkValidityForm };
+const checkValidityDetailAction = (name, value, rules, root) => {
+  if (!name) {
+    const error = { code: "NULL_VALUE", message: "Tên control bị rỗng." };
+    throw error;
+  }
+  // if (!value) {
+  //   const error = { code: "NULL_VALUE", message: "Giá trị kiểm tra bị rỗng." };
+  //   throw error;
+  // }
+
+  let isValid = true;
+  let errorMessage = [];
+
+  if (!rules) {
+    return { isValid: true, errorMessage: [] };
+  }
+
+  if (rules.required) {
+    isValid = value.trim() !== "" && isValid;
+    if (!isValid) errorMessage.push("Bắt buộc phải có " + name.toUpperCase());
+  }
+
+  if (rules.isGreaterThan0) {
+    isValid = value > 0 && isValid;
+    if (!isValid) errorMessage.push("Số tiền rút phải lớn hơn 0.");
+  }
+
+  if (rules.isSmallerThanRoot) {
+    isValid = value <= root && isValid;
+    if (!isValid)
+      errorMessage.push("Số tiền rút phải nhỏ hơn hoặc bằng số dư hiện có.");
+  }
+
+  return { isValid, errorMessage };
+};
+
+export { checkValidityLogin, checkValidityForm, checkValidityDetailAction };
+
+/**
+ * Kiểm tra điều kiện để Hiện nút gửi thêm
+ * @param {String} paymentMethod Mã phương thức thanh toán lãi
+ * @param {Boolean} end Đã tất toán hay chưa
+ * @param {String} opendate Ngày mở sổ
+ * @param {Number} term kỳ hạn
+ */
+const checkAllowDeposit = (paymentMethod, end, enddate, opendate, term) => {
+  const today = moment().format("DD/MM/YYYY");
+  let tempEnddate = moment(opendate, "DD/MM/YYYY")
+    .add(term, "months")
+    .format("DD/MM/YYYY");
+  if (end || enddate) return false;
+  while (tempEnddate <= today) {
+    if (tempEnddate === today) return true;
+    tempEnddate = moment(tempEnddate, "DD/MM/YYYY")
+      .add(term, "months")
+      .format("DD/MM/YYYY");
+  }
+  return false;
+};
+
+/**
+ * Kiểm tra điều kiện để Hiện nút Rút
+ * @param {String} paymentMethod Mã phương thức thanh toán lãi
+ * @param {Boolean} end Đã tất toán hay chưa
+ * @param {String} opendate Ngày mở sổ
+ * @param {Number} term kỳ hạn
+ */
+const checkAllowWithdraw = (paymentMethod, end, opendate, term) => {
+  const today = new moment();
+  if (end) return false;
+  if (term == 0 && today < new moment(opendate, "DD/MM/YYYY").add(15, "days"))
+    return false;
+  else return true;
+};
+
+export { checkAllowDeposit, checkAllowWithdraw };

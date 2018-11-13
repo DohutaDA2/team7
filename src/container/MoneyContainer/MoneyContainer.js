@@ -8,11 +8,7 @@ import Passbooks from "../../components/Passbooks/Passbooks";
 import Spinner from "../../components/UI/Spinner/Spinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
-import {
-  loadPassbooks,
-  getPassbooks,
-  groupBy
-} from "../../hoc/business/business";
+import { loadPassbooks, groupBy } from "../../hoc/business/business";
 
 export default class MoneyContainer extends Component {
   state = {
@@ -49,13 +45,16 @@ export default class MoneyContainer extends Component {
         //     console.log(err.code);
         //     this.setState({ loading: false, error: err });
         //   });
-        let data = await loadPassbooks(userInfo);
+        let data = await loadPassbooks(userInfo).catch(error => {
+          throw error;
+        });
         this.setState({ loading: false, passbooks: data });
 
         // let p = await getPassbooks(userInfo);
         // this.setState({ loading: false, passbooks: p });
       }
     } catch (error) {
+      console.log(error);
       this.setState({ loading: false, error: error });
     }
   }

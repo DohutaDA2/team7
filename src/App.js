@@ -4,7 +4,8 @@ import Welcome from "./components/Welcome/Welcome";
 import Login from "./container/LoginContainer/Login";
 import MoneyContainer from "./container/MoneyContainer/MoneyContainer";
 import FormContainer from "./container/MoneyContainer/FormContainter/PassbookForm";
-import DetailContainer from './container/MoneyContainer/DetailContainer/PassbookDetail';
+import DetailContainer from "./container/MoneyContainer/DetailContainer/PassbookDetail";
+import withAuthentication from "./hoc/withAuth/withAuthentication";
 
 class App extends Component {
   render() {
@@ -20,4 +21,4 @@ class App extends Component {
   }
 }
 
-export default App;
+export default withAuthentication(App);
