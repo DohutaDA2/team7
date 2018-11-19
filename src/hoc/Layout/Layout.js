@@ -15,7 +15,7 @@ const Layout = props => (
         top:'95%'
       }}
     >
-      ver 0.8
+      ver 1.0.8
     </p>
   </>
 );
