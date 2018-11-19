@@ -289,6 +289,10 @@ class NewPassbook extends Component {
 
   inputChangedHandler = (event, controlName) => {
     try {
+      if (!event || !controlName) {
+        const error = { code: "NULL_VALUE", message: "Lỗi hệ thống" };
+        throw error;
+      }
       let updatedControls = { ...this.state.controls };
 
       // if (controlName === "termid" && event.target.value === "t00") {
@@ -423,6 +427,13 @@ class NewPassbook extends Component {
 
   // TODO: hiện thông báo confirm thành công trước khi redirect
   okAddHandler = event => {
+    if (!event) {
+      console.log({ Code: "NULL_VALUE", Message: "Event is empty" });
+      this.setState({
+        error: { code: "NULL_VALUE", message: "Lỗi giá trị rỗng" }
+      });
+      return;
+    }
     event.preventDefault();
 
     let errorMessage = [];

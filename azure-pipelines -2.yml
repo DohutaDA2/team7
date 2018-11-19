@@ -8,9 +8,9 @@ steps:
 
   - script: npm install
 
-  - script: npm run build
-
   - script: npx jest --ci --updateSnapshot --reporters=jest-junit --reporters=default --coverage --coverageReporters=cobertura --coverageReporters=html
+
+  - script: npm run build
 
   - task: PublishTestResults@2
     displayName: "Publish Test Results"
@@ -25,11 +25,33 @@ steps:
       summaryFileLocation: "$(System.DefaultWorkingDirectory)/coverage/*coverage.xml"
       reportDirectory: "$(System.DefaultWorkingDirectory)/coverage"
 
-  - task: ArchiveFiles@2
-    displayName: "Archive"
+  - task: CopyFiles@2
+    displayName: 'Copy builded'
     inputs:
-      rootFolderOrFile: '$(System.DefaultWorkingDirectory)/build'
-      includeRootFolder: false
+      SourceFolder: '$(agent.builddirectory)'
+
+      Contents: |
+      **\*.runsettings
+      **\*FunctionalTest*\**\bin\$(BuildConfiguration)\**
+
+      TargetFolder: '$(build.artifactstagingdirectory)\FunctionalTests'
+
+      flattenFolders: true
+
+  - task: CopyFiles@2
+    displayName: 'Copy test file'
+    inputs:
+      SourceFolder: '$(agent.builddirectory)'
+
+      Contents: |
+      **\*.runsettings
+      **\*FunctionalTest*\**\bin\$(BuildConfiguration)\**
+
+      TargetFolder: '$(build.artifactstagingdirectory)\FunctionalTests'
+
+      flattenFolders: true
+
+
 
   - task: PublishBuildArtifacts@1
   

@@ -468,6 +468,7 @@ const getOneDoc = async doc => {
       data.paymentId,
       data.endConditionId
     );
+    console.log(data);
     return data;
   } catch (error) {
     throw error;
@@ -959,7 +960,7 @@ const calculateLimit = (root, rate, months) =>
   Math.floor((root * (rate / 100) * months) / 12);
 
 /**
- * Tính lãy không kỳ hạn
+ * Tính lãi không kỳ hạn
  * @param {Number} root root balance
  * @param {Number} rate Rate
  * @param {Number} days Days

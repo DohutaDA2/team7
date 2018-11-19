@@ -163,7 +163,7 @@ const checkAllowDeposit = (paymentMethod, end, enddate, opendate, term) => {
     .add(term, "months")
     .format("DD/MM/YYYY");
   if (end || enddate) return false;
-  while (tempEnddate <= today) {
+  while (moment(tempEnddate, "DD/MM/YYYY") <= moment(today, "DD/MM/YYYY")) {
     if (tempEnddate === today) return true;
     tempEnddate = moment(tempEnddate, "DD/MM/YYYY")
       .add(term, "months")
@@ -182,7 +182,7 @@ const checkAllowDeposit = (paymentMethod, end, enddate, opendate, term) => {
 const checkAllowWithdraw = (paymentMethod, end, opendate, term) => {
   const today = new moment();
   if (end) return false;
-  if (term == 0 && today < new moment(opendate, "DD/MM/YYYY").add(15, "days"))
+  if (term === 0 && today < new moment(opendate, "DD/MM/YYYY").add(15, "days"))
     return false;
   else return true;
 };

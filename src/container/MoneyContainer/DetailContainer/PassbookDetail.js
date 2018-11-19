@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import Layout from "../../../hoc/Layout/Layout.js";
-import Spinner from "../../../components/UI/Spinner/Spinner";
 import Modal from "../../../components/UI/Modal/Modal";
+import Spinner from "../../../components/UI/Spinner/Spinner";
 import Button from "../../../components/UI/Button/Button";
 import Input from "../../../components/UI/Input/Input";
 import moment from "moment";
@@ -195,128 +195,146 @@ class PassbookDetail extends Component {
     }
   };
 
-  componentDidMount() {}
-
   saveData = event => {
     event.preventDefault();
     this.setState({ loading: true });
-    if (this.state.isWithdrawing) {
-      try {
-        const log = {
-          amount: this.state.actionResult.value,
-          time: new Date()
-        };
-        saveLog(this.state.passbook.id, log)
-          .then(res => {
-            this.setState({ loadData: false });
-            // console.log(res);
-            window.location.reload();
-          })
-          .catch(error => {
-            throw error;
-          });
-      } catch (error) {
-        this.setState({ error: error });
+    try {
+      if (
+        !this.state.actionResult.value ||
+        !this.state.actionResult.status.valid
+      ) {
+        const error = { code: "NULL_VALUE", message: "Lỗi giá trị rỗng!" };
+        throw error;
       }
-    }
-    if (this.state.isAccounting) {
-      try {
-        this.setState({ loading: true });
-        let passbookData = {
-          balance: this.state.passbook.balance,
-          bankId: this.state.passbook.bankId,
-          end: true,
-          enddate: moment().toDate(),
-          endConditionId: this.state.passbook.endConditionId,
-          interestRate: this.state.passbook.interestRate,
-          unlimitInterestRate: this.state.passbook.unlimitInterestRate,
-          interestPayment: this.state.passbook.paymentId,
-          name: this.state.passbook.passbookName,
-          opendate: moment(this.state.passbook.opendate, "DD/MM/YYYY").toDate(),
-          termId: this.state.passbook.termId
-        };
-        updatePassbook(this.state.passbook.id, passbookData)
-          .then(res => {
-            try {
-              this.setState({ loading: false });
+      if (this.state.isWithdrawing) {
+        try {
+          const log = {
+            amount: this.state.actionResult.value,
+            time: new Date()
+          };
+          saveLog(this.state.passbook.id, log)
+            .then(res => {
+              this.setState({ loadData: false });
+              // console.log(res);
               window.location.reload();
-            } catch (error) {
-              this.setState({ error: error });
-            }
-            // console.log(res);
-          })
-          .catch(err => {
-            console.log(err);
-            this.setState({ loading: false, error: err });
-          });
-      } catch (error) {
-        this.setState({ error: error });
+            })
+            .catch(error => {
+              throw error;
+            });
+        } catch (error) {
+          this.setState({ error: error });
+        }
       }
-    }
-    if (this.state.isDespositing) {
-      try {
-        this.setState({ loading: true });
-        let passbookData = {
-          balance: this.state.passbook.balance,
-          bankId: this.state.passbook.bankId,
-          end: true,
-          enddate: moment().toDate(),
-          endConditionId: this.state.passbook.endConditionId,
-          interestRate: this.state.passbook.interestRate,
-          unlimitInterestRate: this.state.passbook.unlimitInterestRate,
-          interestPayment: this.state.passbook.paymentId,
-          name:
-            this.state.passbook.passbookName +
-            ` (mở ngày ${this.state.passbook.opendate})`,
-          opendate: moment(this.state.passbook.opendate, "DD/MM/YYYY").toDate(),
-          termId: this.state.passbook.termId
-        };
-        updatePassbook(this.state.passbook.id, passbookData)
-          .then(res => {
-            try {
-              let newPassbookData = {
-                balance:
-                  this.state.passbook.balance + +this.state.actionResult.value,
-                bankId: this.state.passbook.bankId,
-                end: false,
-                enddate: "",
-                endConditionId: this.state.passbook.endConditionId,
-                interestRate: this.state.passbook.interestRate,
-                unlimitInterestRate: this.state.passbook.unlimitInterestRate,
-                interestPayment: this.state.passbook.paymentId,
-                name: this.state.passbook.passbookName,
-                opendate: moment(
-                  this.state.passbook.opendate,
-                  "DD/MM/YYYY"
-                ).toDate(),
-                termId: this.state.passbook.termId
-              };
-              saveNewPassbook(this.state.userInfo, newPassbookData)
-                .then(res => {
-                  try {
-                    this.setState({ loading: false });
-                    this.closeAction();
-                  } catch (error) {
-                    this.setState({ error: error });
-                  }
-                  // console.log(res);
-                })
-                .catch(err => {
-                  console.log(err);
-                  this.setState({ loading: false, error: err });
-                });
-            } catch (error) {
-              this.setState({ error: error });
-            }
-            // console.log(res);
-          })
-          .catch(err => {
-            console.log(err);
-            this.setState({ loading: false, error: err });
-          });
-      } catch (error) {
-        this.setState({ error: error });
+      if (this.state.isAccounting) {
+        try {
+          this.setState({ loading: true });
+          let passbookData = {
+            balance: this.state.passbook.balance,
+            bankId: this.state.passbook.bankId,
+            end: true,
+            enddate: moment().toDate(),
+            endConditionId: this.state.passbook.endConditionId,
+            interestRate: this.state.passbook.interestRate,
+            unlimitInterestRate: this.state.passbook.unlimitInterestRate,
+            interestPayment: this.state.passbook.paymentId,
+            name: this.state.passbook.passbookName,
+            opendate: moment(
+              this.state.passbook.opendate,
+              "DD/MM/YYYY"
+            ).toDate(),
+            termId: this.state.passbook.termId
+          };
+          updatePassbook(this.state.passbook.id, passbookData)
+            .then(res => {
+              try {
+                this.setState({ loading: false });
+                window.location.reload();
+              } catch (error) {
+                this.setState({ error: error });
+              }
+              // console.log(res);
+            })
+            .catch(err => {
+              console.log(err);
+              this.setState({ loading: false, error: err });
+            });
+        } catch (error) {
+          this.setState({ error: error });
+        }
       }
+      if (this.state.isDespositing) {
+        try {
+          this.setState({ loading: true });
+          let passbookData = {
+            balance: this.state.passbook.balance,
+            bankId: this.state.passbook.bankId,
+            end: true,
+            enddate: moment().toDate(),
+            endConditionId: this.state.passbook.endConditionId,
+            interestRate: this.state.passbook.interestRate,
+            unlimitInterestRate: this.state.passbook.unlimitInterestRate,
+            interestPayment: this.state.passbook.paymentId,
+            name:
+              this.state.passbook.passbookName +
+              ` (mở ngày ${this.state.passbook.opendate})`,
+            opendate: moment(
+              this.state.passbook.opendate,
+              "DD/MM/YYYY"
+            ).toDate(),
+            termId: this.state.passbook.termId
+          };
+          updatePassbook(this.state.passbook.id, passbookData)
+            .then(res => {
+              try {
+                let newPassbookData = {
+                  balance:
+                    this.state.passbook.balance +
+                    +this.state.actionResult.value,
+                  bankId: this.state.passbook.bankId,
+                  end: false,
+                  enddate: "",
+                  endConditionId: this.state.passbook.endConditionId,
+                  interestRate: this.state.passbook.interestRate,
+                  unlimitInterestRate: this.state.passbook.unlimitInterestRate,
+                  interestPayment: this.state.passbook.paymentId,
+                  name: this.state.passbook.passbookName,
+                  opendate: moment(
+                    this.state.passbook.opendate,
+                    "DD/MM/YYYY"
+                  ).toDate(),
+                  termId: this.state.passbook.termId
+                };
+                saveNewPassbook(this.state.userInfo, newPassbookData)
+                  .then(res => {
+                    try {
+                      this.setState({ loading: false });
+                      this.closeAction();
+                    } catch (error) {
+                      this.setState({ error: error });
+                    }
+                    // console.log(res);
+                  })
+                  .catch(err => {
+                    console.log(err);
+                    this.setState({ loading: false, error: err });
+                  });
+              } catch (error) {
+                this.setState({ error: error });
+              }
+              // console.log(res);
+            })
+            .catch(err => {
+              console.log(err);
+              this.setState({ loading: false, error: err });
+            });
+        } catch (error) {
+          this.setState({ error: error });
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      this.setState({ loading: false });
+      this.setState({ error: error });
     }
   };
 
@@ -428,7 +446,6 @@ class PassbookDetail extends Component {
   };
 
   render() {
-    console.log(this.state);
     // --- spinner ---
     let spinner = null;
     if (this.state.loading) {
