@@ -131,21 +131,22 @@ class PassbookDetail extends Component {
       }
       const userInfo = { userId: temp.userId, idToken: temp.idToken };
       const data = await loadPassbook(userInfo, temp.id);
-
-      const actions = {
-        ...this.state.actions,
+      
+      let actions = {...this.state.actions};
+      actions = {
+        ...actions,
         edit: {
-          ...this.state.actions.edit,
+          ...actions.edit,
           config: {
-            ...this.state.actions.edit.config,
+            ...actions.edit.config,
             disabled: data.end
           },
           action: () => this.editAction(data.id)
         },
         withdraw: {
-          ...this.state.actions.withdraw,
+          ...actions.withdraw,
           config: {
-            ...this.state.actions.withdraw.config,
+            ...actions.withdraw.config,
             disabled: !checkAllowWithdraw(
               data.paymentId,
               data.end,
@@ -156,9 +157,9 @@ class PassbookDetail extends Component {
           action: () => this.withdrawAction(data.id)
         },
         deposit: {
-          ...this.state.actions.deposit,
+          ...actions.deposit,
           config: {
-            ...this.state.actions.deposit.config,
+            ...actions.deposit.config,
             disabled: !checkAllowDeposit(
               data.paymentId,
               data.end,
@@ -170,18 +171,19 @@ class PassbookDetail extends Component {
           action: () => this.depositAction(data.id)
         },
         accounting: {
-          ...this.state.actions.accounting,
+          ...actions.accounting,
           config: {
-            ...this.state.actions.accounting.config,
-            disabled: false || data.end || data.enddate
+            ...actions.accounting.config,
+            // disabled: false || data.end || data.enddate
           },
           action: () => this.accountingAction(data.id)
         },
         closing: {
-          ...this.state.actions.closing,
+          ...actions.closing,
           action: () => this.closeAction()
         }
       };
+      console.log(actions);
 
       this.setState({
         loading: false,
@@ -201,7 +203,7 @@ class PassbookDetail extends Component {
     try {
       if (
         !this.state.actionResult.value ||
-        !this.state.actionResult.status.valid
+        !this.state.actionResult.status.isValid
       ) {
         const error = { code: "NULL_VALUE", message: "Lỗi giá trị rỗng!" };
         throw error;

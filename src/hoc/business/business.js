@@ -345,11 +345,11 @@ const loadPassbooks = async userInfo => {
         throw error;
       });
   } catch (error) {
-    console.log(error);
     let err = {
       code: "ERROR_CONNECTION",
       message: "Lỗi kết nối và lấy dữ liệu"
     };
+    console.log(error);
     throw err;
   }
 };
@@ -439,7 +439,7 @@ const getOneDoc = async doc => {
     data.bankFullname = queryBank.fullname;
     data.end = doc.data().end;
     data.enddate = doc.data().enddate
-      ? toShortDate(doc.data().enddate.toDate())
+      ? moment(doc.data().enddate.toDate()).format("DD/MM/YYYY")
       : "";
     data.endConditionId = queryEndCondition.id;
     data.endConditionName = queryEndCondition.name;
@@ -448,7 +448,7 @@ const getOneDoc = async doc => {
     data.pyamentDesc = queryPayment.description;
     data.interestRate = parseFloat(doc.data().interest_rate);
     data.unlimitInterestRate = parseFloat(doc.data().unlimit_interest_rate);
-    data.opendate = toShortDate(doc.data().opendate.toDate());
+    data.opendate = moment(doc.data().opendate.toDate()).format("DD/MM/YYYY");
     data.termId = queryTerm.id;
     data.term = parseInt(queryTerm.term);
     data.termDes = queryTerm.description;
@@ -468,7 +468,6 @@ const getOneDoc = async doc => {
       data.paymentId,
       data.endConditionId
     );
-    console.log(data);
     return data;
   } catch (error) {
     throw error;
@@ -903,7 +902,6 @@ const saveLog = async (passbookId, log) => {
     });
 };
 
-
 export { updatePassbook, saveLog, saveNewPassbook };
 
 /////////////////////////////////////////////////////////////////
@@ -1097,8 +1095,8 @@ const calculateProfitLimit = (
         }
         balance = temp.balance;
         profit += temp.profit;
-        opendateTemp = moment(opendateTemp)
-          .add(+term, "months")
+        opendateTemp = moment(opendateTemp, "DD/MM/YYYY")
+          .add(term, "months")
           .add(1, "day")
           .format("DD/MM/YYYY");
       }
@@ -1149,7 +1147,7 @@ const calculateProfitLimit = (
         if (endcondition === "e1" && termTemp !== 1 && i + 1 < termTemp) {
           balance = temp.balance;
         }
-        opendateTemp = moment(opendateTemp)
+        opendateTemp = moment(opendateTemp, "DD/MM/YYYY")
           .add(+term, "months")
           .add(1, "day")
           .format("DD/MM/YYYY");

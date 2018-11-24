@@ -127,5 +127,9 @@
     "presets": [
       "react-app"
     ]
+  },
+  "devDependencies": {
+    "firebase-mock": "^2.2.10",
+    "mock-cloud-firestore": "^0.8.2"
   }
 }

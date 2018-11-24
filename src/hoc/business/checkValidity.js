@@ -158,11 +158,12 @@ export { checkValidityLogin, checkValidityForm, checkValidityDetailAction };
  * @param {Number} term kỳ hạn
  */
 const checkAllowDeposit = (paymentMethod, end, enddate, opendate, term) => {
+  if (end || enddate) return false;
+  if(term === 0) return true;
   const today = moment().format("DD/MM/YYYY");
   let tempEnddate = moment(opendate, "DD/MM/YYYY")
     .add(term, "months")
     .format("DD/MM/YYYY");
-  if (end || enddate) return false;
   while (moment(tempEnddate, "DD/MM/YYYY") <= moment(today, "DD/MM/YYYY")) {
     if (tempEnddate === today) return true;
     tempEnddate = moment(tempEnddate, "DD/MM/YYYY")
